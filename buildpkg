@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# buildpkg - build rpm package from PKGDEF
+#
+
+# exit on error
+set -e
+
+if ! which fpm >/dev/null 2>&1; then
+  echo "fpm not found, eixt" >&2
+  exit 1
+fi
+
+if ! which rpmbuild >/dev/null 2>&1; then
+  echo "rpmbuild not found, eixt" >&2
+  exit 1
+fi
+
+BASE="$(pwd)"
+BUILD="${BASE}/build"
+IMAGE="${BASE}/image"
+
+mkdir -p "${BUILD}" "${IMAGE}"
+
+
+if [[ ! -f PKGDEF ]]; then
+  echo 'cannot find PKGDEF!' >&2
+  exit 1
+fi
+
+. PKGDEF
+
+# check dependancies
+ok=true
+for d in "${depends[@]}" "${build_depends[@]}"; do
+  if ! rpm -q "${d}" >/dev/null 2>&1; then
+    echo "${d} is not installed" >&2
+    ok=false
+  fi
+done
+if ! ${ok}; then
+  echo "dependancies are not met. please install these" >&2
+  exit 1
+fi
+
+# download files
+if (( ${#downloads} > 0 )); then
+  wget --no-clobber "${downloads[@]}"
+fi
+
+cd "${BUILD}"
+
+# unpack files
+for d in "${downloads[@]}"; do
+  d="${d##*/}"
+  if [[ -n "${d}" ]]; then
+	case "${d}" in
+		*.tar.*)
+			tar xf "${BASE}/${d}"
+			;;
+		*.zip)
+			unzip "${BASE}/${d}"
+			;;
+		*)
+			echo "unknown archive: ${d}" >&2
+			exit 1
+			;;
+	esac
+  fi
+done
+
+build
+
+if [[ $? == 0 ]]; then
+  cd "${BASE}"
+
+  # XXX: opt user
+  args=()
+
+  args+=( -s dir -t rpm --prefix="/" )
+  args+=( --name "${name}" --version "${version}" )
+
+  for d in "${depends[@]}"; do
+    args+=( --depends "${d}" )
+  done
+
+  if [[ -n "${arch}" ]]; then
+    args+=( --architecture "${arch}" )
+  fi
+
+  args+=( -C "${IMAGE}" )
+
+  fpm "${args[@]}"
+
+else
+  echo 'build failed!' >&2
+  exit 1
+fi

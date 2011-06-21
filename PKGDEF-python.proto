@@ -1,0 +1,15 @@
+name="package-name"
+version="1.0.0"
+revision="1"
+#arch="noarch" # default: your OS' arch
+description="Sample python package"
+downloads=("http://localhost/${name}-${version}.tar.gz")
+depends=()
+build_depends=()
+
+build() {
+	cd "${BUILD}/${name}-${version}"
+
+	python setup.py build
+	python setup.py install --root="${IMAGE}" --optimize=1
+}

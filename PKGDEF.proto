@@ -1,0 +1,16 @@
+name="package-name"
+version="1.0.0"
+revision="1"
+#arch="noarch" # default: your OS' arch
+description="Prototype of PKGDEF"
+downloads=("http://localhost/${name}-${version}.tar.bz2")
+depends=()
+build_depends=()
+
+build() {
+	cd "${BUILD}/${name}-${version}"
+
+	./configure --prefix=/usr
+	make
+	make DESTDIR="${IMAGE}" install
+}
