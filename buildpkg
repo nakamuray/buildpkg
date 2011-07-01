@@ -78,7 +78,7 @@ if [[ $? == 0 ]]; then
   args=()
 
   args+=( -s dir -t rpm --prefix="/" )
-  args+=( --name "${name}" --version "${version}" )
+  args+=( --name "${name}" --version "${version}" --iteration "${revision}" )
 
   for d in "${depends[@]}"; do
     args+=( --depends "${d}" )
